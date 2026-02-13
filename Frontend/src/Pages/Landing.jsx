@@ -19,8 +19,8 @@ export default function Landing(){
           <div className="hero-sub">Track rent payments, manage agreements, and resolve maintenance issues — all in one secure platform designed for landlords and tenants.</div>
         </div>
         <div className="row gap-2">
-          <a className="btn btn-primary" href="#dashboard" style={{gap:8}}>✨ Open Dashboard</a>
-          <a className="btn btn-ghost" href="#tickets">📍 Raise Ticket</a>
+          <a className="btn btn-primary" href="#dashboard" style={{gap:8}}> Open Dashboard</a>
+          <a className="btn btn-primary" href="#tickets">Raise Ticket</a>
         </div>
       </div>
 
