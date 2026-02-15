@@ -19,8 +19,8 @@ export default function Landing(){
           <div className="hero-sub">Track rent payments, manage agreements, and resolve maintenance issues — all in one secure platform designed for landlords and tenants.</div>
         </div>
         <div className="row gap-2">
-          <a className="btn btn-primary" href="#dashboard" style={{gap:8}}> Open Dashboard</a>
-          <a className="btn btn-primary" href="#tickets">Raise Ticket</a>
+          <a className="btn btn-primary" href="/login" style={{gap:8}}> Get Started</a>
+          <a className="btn btn-primary" href="/tickets">Raise Ticket</a>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ export default function Landing(){
         <div style={{textAlign:'center'}}>
           <h3 style={{marginBottom:12}}>Ready to get started?</h3>
           <p className="muted" style={{marginBottom:18}}>Join thousands of landlords and tenants using RentEase</p>
-          <a className="btn btn-primary" href="#dashboard">Launch Dashboard →</a>
+          <a className="btn btn-primary" href="/login">Launch Dashboard →</a>
         </div>
       </div>
     </section>

@@ -1,73 +1,85 @@
-// Components/navbar.jsx
+// Components/Navbar.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { FiHome, FiFileText, FiTool, FiBell, FiUser, FiMenu, FiX } from 'react-icons/fi';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { FiHome, FiFileText, FiTool, FiBell, FiUser, FiMenu, FiX, FiLogOut } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 
-function Navbar({ active }) {
+function Navbar() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const menuRef = useRef(null);
+  const profileRef = useRef(null);
 
-  const handleNavigation = (route) => {
-    window.location.hash = route;
+  const handleNavigation = (path) => {
+    navigate(path);
     setIsMenuOpen(false);
+    setProfileOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setProfileOpen(false);
+    setIsMenuOpen(false);
+    navigate('/login');
   };
 
   const toggleMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsMenuOpen(!isMenuOpen);
+    setProfileOpen(false);
   };
 
-  // Close menu when clicking outside
+  const toggleProfile = () => {
+    setProfileOpen((prev) => !prev);
+    setIsMenuOpen(false);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // If clicking on the menu button, don't close
-      if (menuButtonRef.current && menuButtonRef.current.contains(event.target)) {
-        return;
-      }
-      
-      // If clicking inside the menu, don't close
-      if (menuRef.current && menuRef.current.contains(event.target)) {
-        return;
-      }
-
-      // Otherwise, close the menu
-      if (isMenuOpen) {
-        setIsMenuOpen(false);
-      }
+      if (menuButtonRef.current?.contains(event.target)) return;
+      if (menuRef.current?.contains(event.target)) return;
+      if (profileRef.current?.contains(event.target)) return;
+      if (isMenuOpen) setIsMenuOpen(false);
+      if (profileOpen) setProfileOpen(false);
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
-    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, profileOpen]);
 
   const navItems = [
-    { route: 'home', icon: FiHome, label: 'Home' },
-    { route: 'dashboard', icon: FiHome, label: 'Dashboard' },
-    { route: 'tickets', icon: FiTool, label: 'Tickets' },
-    { route: 'agreement', icon: FiFileText, label: 'Agreements' }
+    { path: '/', icon: FiHome, label: 'Home' },
+    { path: '/dashboard', icon: FiHome, label: 'Dashboard' },
+    { path: '/tickets', icon: FiTool, label: 'Tickets' },
+    { path: '/agreement', icon: FiFileText, label: 'Agreements' },
   ];
+  if (!user) navItems.push({ path: '/login', icon: FiUser, label: 'Login' });
+
+  const avatarLetter = user
+    ? (user.name ? user.name[0] : user.email[0]).toUpperCase()
+    : null;
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        {/* Logo */}
-        <div className="navbar-brand" onClick={() => handleNavigation('home')}>
+        <div className="navbar-brand" onClick={() => handleNavigation('/')}>
           <h1>RentEase</h1>
         </div>
 
-        {/* Desktop Navigation */}
         <div className="navbar-links">
           {navItems.map((item) => (
             <button
-              key={item.route}
-              onClick={() => handleNavigation(item.route)}
-              className={`nav-link ${active === item.route ? 'active' : ''}`}
+              key={item.path}
+              onClick={() => handleNavigation(item.path)}
+              className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
             >
               <item.icon className="nav-icon" />
               <span>{item.label}</span>
@@ -75,24 +87,53 @@ function Navbar({ active }) {
           ))}
         </div>
 
-        {/* Right Side Actions */}
         <div className="navbar-actions">
-          <button className="get-started-btn" onClick={() => handleNavigation('dashboard')}>
-            Get Started
-          </button>
-          
-          <button className="notification-btn">
-            <FiBell />
-          </button>
-          
-          <div className="user-avatar">
-            <FiUser />
-          </div>
+          {user ? (
+            <div className="profile-wrap" ref={profileRef}>
+              <button
+                type="button"
+                className="profile-avatar-btn"
+                onClick={toggleProfile}
+                aria-label="Profile menu"
+              >
+                <span className="profile-avatar">{avatarLetter}</span>
+              </button>
+              {profileOpen && (
+                <div className="profile-dropdown">
+                  <div className="profile-dropdown-header">
+                    <span className="profile-dropdown-avatar">{avatarLetter}</span>
+                    <div className="profile-dropdown-info">
+                      <span className="profile-dropdown-email">{user.email}</span>
+                      <span className="profile-dropdown-role">{user.role}</span>
+                    </div>
+                  </div>
+                  <button type="button" className="profile-dropdown-logout" onClick={handleLogout}>
+                    <FiLogOut /> Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button className="get-started-btn" onClick={() => handleNavigation('/login')}>
+              Get Started
+            </button>
+          )}
 
-          {/* Mobile Menu Button - Fixed click handler */}
-          <button 
+          {user && (
+            <button className="notification-btn">
+              <FiBell />
+            </button>
+          )}
+
+          {!user && (
+            <div className="user-avatar">
+              <FiUser />
+            </div>
+          )}
+
+          <button
             ref={menuButtonRef}
-            className="mobile-menu-btn" 
+            className="mobile-menu-btn"
             onClick={toggleMenu}
             type="button"
             aria-label="Toggle menu"
@@ -102,19 +143,24 @@ function Navbar({ active }) {
         </div>
       </div>
 
-      {/* Mobile Dropdown Menu */}
       {isMenuOpen && (
         <div ref={menuRef} className="mobile-menu">
           {navItems.map((item) => (
             <button
-              key={item.route}
-              onClick={() => handleNavigation(item.route)}
-              className={`mobile-nav-link ${active === item.route ? 'active' : ''}`}
+              key={item.path}
+              onClick={() => handleNavigation(item.path)}
+              className={`mobile-nav-link ${location.pathname === item.path ? 'active' : ''}`}
             >
               <item.icon className="mobile-nav-icon" />
               <span>{item.label}</span>
             </button>
           ))}
+          {user && (
+            <button type="button" className="mobile-nav-link" onClick={handleLogout}>
+              <FiLogOut className="mobile-nav-icon" />
+              <span>Log out</span>
+            </button>
+          )}
         </div>
       )}
     </nav>
