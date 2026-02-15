@@ -56,9 +56,9 @@ export default function Dashboard(){
         <div className="card">
           <h3 style={{marginBottom:16,marginTop:0}}>Quick Actions</h3>
           <div className="col gap-2">
-            <a className="btn btn-primary" href="#agreement" style={{width:'100%',justifyContent:'center'}}>📝 Create Agreement</a>
-            <a className="btn btn-ghost" href="#tickets" style={{width:'100%',justifyContent:'center'}}>🔧 Raise Ticket</a>
-            <a className="btn btn-ghost" href="#" style={{width:'100%',justifyContent:'center'}}>👤 Add Tenant</a>
+            <a className="btn btn-primary" href="/agreement" style={{width:'100%',justifyContent:'center'}}>📝 Create Agreement</a>
+            <a className="btn btn-ghost" href="/tickets" style={{width:'100%',justifyContent:'center'}}>🔧 Raise Ticket</a>
+            <a className="btn btn-ghost" href="/dashboard" style={{width:'100%',justifyContent:'center'}}>👤 Add Tenant</a>
           </div>
         </div>
       </div>

@@ -1,41 +1,36 @@
-import React, { useEffect, useState } from 'react'
-import Navbar from './Components/navbar'
+import React from 'react'
+import { Routes, Route } from 'react-router-dom'
+import Navbar from './Components/Navbar'
 import Footer from './Components/foot'
 import Landing from './Pages/Landing'
+import Login from './Pages/Login'
+import Register from './Pages/Register'
 import Dashboard from './Pages/Dashboard'
+import TenantDashboard from './Pages/TenantDashboard'
+import LandlordDashboard from './Pages/LandlordDashboard'
 import Tickets from './Pages/Tickets'
 import Agreement from './Pages/Agreement'
 import NotFound from './Pages/NotFound'
-import './App.css';
+import ProtectedRoute from './Components/ProtectedRoute'
+import './App.css'
 
 const App = () => {
-  const [route, setRoute] = useState(() => window.location.hash.slice(1) || 'home')
-
-  useEffect(() => {
-    const onHash = () => {setRoute(window.location.hash.slice(1) || 'home')};
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, []);
-
-  const renderPage = () => {
-    switch (route) {
-      case 'home':
-        return <Landing />
-      case 'dashboard':
-        return <Dashboard />
-      case 'tickets':
-        return <Tickets />
-      case 'agreement':
-        return <Agreement />
-      default:
-        return <NotFound />
-    }
-  }
-
   return (
     <div className="app-root">
-      <Navbar active={route} />
-      <main className="app-main">{renderPage()}</main>
+      <Navbar />
+      <main className="app-main">
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/tenant-dashboard" element={<ProtectedRoute allowedRoles={['tenant']}><TenantDashboard /></ProtectedRoute>} />
+          <Route path="/landlord-dashboard" element={<ProtectedRoute allowedRoles={['landlord']}><LandlordDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/tickets" element={<Tickets />} />
+          <Route path="/agreement" element={<Agreement />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
       <Footer />
     </div>
   )
