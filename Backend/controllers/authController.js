@@ -1,11 +1,17 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
+// Ensure JWT_SECRET is set - use fallback if env var is missing
+const JWT_SECRET = process.env.JWT_SECRET || 'rentease-default-secret-key-change-in-production-2024';
+
 // Generate JWT for user (id, email, role). Expires in 7 days.
 function generateToken(user) {
+  if (!JWT_SECRET || JWT_SECRET.trim() === '') {
+    throw new Error('JWT_SECRET is not configured. Please set it in .env file.');
+  }
   return jwt.sign(
     { id: user._id, email: user.email, role: user.role },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: '7d' }
   );
 }

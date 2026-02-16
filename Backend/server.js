@@ -21,6 +21,15 @@ app.get('/', (req, res) => {
   res.send('RentEase backend is running');
 });
 
+// Debug endpoint to check env vars
+app.get('/api/debug/env', (req, res) => {
+  res.json({
+    JWT_SECRET: process.env.JWT_SECRET ? 'SET (' + process.env.JWT_SECRET.length + ' chars)' : 'NOT SET',
+    PORT: process.env.PORT,
+    MONGO_URI: process.env.MONGO_URI ? 'SET' : 'NOT SET'
+  });
+});
+
 // Check MongoDB connection (1 = connected, 0 = disconnected, 2 = connecting, 3 = disconnecting)
 app.get('/api/health', (req, res) => {
   const state = mongoose.connection.readyState;

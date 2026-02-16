@@ -1,7 +1,11 @@
 import React, {useState} from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import Card from '../Components/Card'
 
 export default function Agreement(){
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
     tenantName: '',
@@ -128,7 +132,19 @@ export default function Agreement(){
               <div style={{padding:12,background:'rgba(255,255,255,0.02)',borderRadius:8,marginBottom:16,textAlign:'center'}}>
                 <div style={{fontSize:12,color:'var(--muted-dark)'}}>Signed by: {formData.tenantName || 'Tenant'}</div>
               </div>
-              <button className="btn btn-primary" onClick={() => window.location.hash='dashboard'} style={{width:'100%',justifyContent:'center'}}>← Back to Dashboard</button>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => {
+                  if (user) {
+                    navigate(user.role === 'landlord' ? '/landlord-dashboard' : '/tenant-dashboard')
+                  } else {
+                    navigate('/login')
+                  }
+                }} 
+                style={{width:'100%',justifyContent:'center'}}
+              >
+                ← Back to Dashboard
+              </button>
             </div>
           )}
         </div>

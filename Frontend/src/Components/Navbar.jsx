@@ -55,13 +55,18 @@ function Navbar() {
     };
   }, [isMenuOpen, profileOpen]);
 
+  // When not logged in, Dashboard takes the user to login.
+  // When logged in, it routes to the correct dashboard based on role.
+  const dashboardPath = user
+    ? (user.role === 'landlord' ? '/landlord-dashboard' : '/tenant-dashboard')
+    : '/login';
+
   const navItems = [
     { path: '/', icon: FiHome, label: 'Home' },
-    { path: '/dashboard', icon: FiHome, label: 'Dashboard' },
+    { path: dashboardPath, icon: FiHome, label: 'Dashboard' },
     { path: '/tickets', icon: FiTool, label: 'Tickets' },
     { path: '/agreement', icon: FiFileText, label: 'Agreements' },
   ];
-  if (!user) navItems.push({ path: '/login', icon: FiUser, label: 'Login' });
 
   const avatarLetter = user
     ? (user.name ? user.name[0] : user.email[0]).toUpperCase()
