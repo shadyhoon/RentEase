@@ -8,6 +8,7 @@ import Register from './Pages/Register'
 import Dashboard from './Pages/Dashboard'
 import TenantDashboard from './Pages/TenantDashboard'
 import LandlordDashboard from './Pages/LandlordDashboard'
+import Tenants from './Pages/Tenants'
 import Tickets from './Pages/Tickets'
 import Agreement from './Pages/Agreement'
 import NotFound from './Pages/NotFound'
@@ -25,6 +26,7 @@ const App = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/tenant-dashboard" element={<ProtectedRoute allowedRoles={['tenant']}><TenantDashboard /></ProtectedRoute>} />
           <Route path="/landlord-dashboard" element={<ProtectedRoute allowedRoles={['landlord']}><LandlordDashboard /></ProtectedRoute>} />
+          <Route path="/tenants" element={<ProtectedRoute allowedRoles={['landlord']}><Tenants /></ProtectedRoute>} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/agreement" element={<Agreement />} />

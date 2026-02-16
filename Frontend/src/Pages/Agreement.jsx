@@ -1,29 +1,66 @@
-import React, {useState} from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Card from '../Components/Card'
+import * as landlordApi from '../api/landlord'
 
-export default function Agreement(){
+export default function Agreement() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
     tenantName: '',
+    tenantEmail: '',
     landlordName: '',
     propertyAddress: '',
     rentAmount: '',
     duration: '12',
-    startDate: ''
+    startDate: '',
   })
   const [signed, setSigned] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const handleChange = (e) => {
     setFormData({...formData, [e.target.name]: e.target.value})
   }
 
-  const handleSign = () => {
-    setSigned(true)
-    setStep(3)
+  const handleSign = async () => {
+    if (!user || user.role !== 'landlord') {
+      setError('Only landlords can create agreements')
+      return
+    }
+
+    // Validate required fields
+    if (!formData.tenantName || !formData.tenantEmail || !formData.propertyAddress || !formData.rentAmount || !formData.startDate) {
+      setError('Please fill all required fields')
+      return
+    }
+
+    setSaving(true)
+    setError('')
+
+    try {
+      await landlordApi.createAgreement(
+        {
+          tenantName: formData.tenantName,
+          tenantEmail: formData.tenantEmail,
+          landlordName: formData.landlordName || user.name || user.email,
+          propertyAddress: formData.propertyAddress,
+          rentAmount: formData.rentAmount,
+          duration: formData.duration,
+          startDate: formData.startDate,
+        },
+        token
+      )
+      setSigned(true)
+      setStep(3)
+    } catch (err) {
+      setError(err.message || 'Failed to save agreement. Please try again.')
+      console.error('Agreement creation error:', err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -56,6 +93,10 @@ export default function Agreement(){
               <input type="text" className="input" name="tenantName" placeholder="Full name" value={formData.tenantName} onChange={handleChange} />
             </div>
             <div>
+              <label style={{display:'block',marginBottom:8,fontWeight:600}}>Tenant Email</label>
+              <input type="email" className="input" name="tenantEmail" placeholder="tenant@example.com" value={formData.tenantEmail} onChange={handleChange} />
+            </div>
+            <div>
               <label style={{display:'block',marginBottom:8,fontWeight:600}}>Property Address</label>
               <textarea className="input" rows={2} name="propertyAddress" placeholder="Complete address" value={formData.propertyAddress} onChange={handleChange}></textarea>
             </div>
@@ -78,6 +119,7 @@ export default function Agreement(){
               <label style={{display:'block',marginBottom:8,fontWeight:600}}>Start Date</label>
               <input type="date" className="input" name="startDate" value={formData.startDate} onChange={handleChange} />
             </div>
+            {error && <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>{error}</p>}
             <button className="btn btn-primary" onClick={() => setStep(2)} style={{width:'100%',justifyContent:'center'}}>Continue →</button>
           </div>
         </div>
@@ -120,7 +162,10 @@ export default function Agreement(){
                   <span style={{fontSize:14}}>I acknowledge and agree to the terms</span>
                 </label>
               </div>
-              <button className="btn btn-primary" onClick={handleSign} style={{width:'100%',justifyContent:'center'}}>🔐 Sign Now</button>
+              {error && <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>{error}</p>}
+              <button className="btn btn-primary" onClick={handleSign} disabled={saving} style={{width:'100%',justifyContent:'center'}}>
+                {saving ? 'Saving...' : '🔐 Sign Now'}
+              </button>
             </div>
           ) : (
             <div style={{padding:18,background:'rgba(16,185,129,0.08)',borderRadius:10,border:'1px solid rgba(16,185,129,0.3)'}}>
