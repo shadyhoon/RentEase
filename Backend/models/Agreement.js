@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 /**
  * Agreement model: stores rental agreement details.
- * Created when landlord creates and signs an agreement.
+ * Created by landlord and sent to tenant for approval.
  */
 const agreementSchema = new mongoose.Schema(
   {
@@ -10,6 +10,11 @@ const agreementSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
     },
     tenantName: {
       type: String,
@@ -44,13 +49,20 @@ const agreementSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    signedAt: {
+    // Timestamp when landlord created/sent the agreement
+    sentToTenantAt: {
       type: Date,
-      default: Date.now,
+      default: null,
+    },
+    // Timestamp when tenant approved/signed the agreement
+    tenantApprovalTimestamp: {
+      type: Date,
+      default: null,
     },
     status: {
       type: String,
-      enum: ['draft', 'signed', 'expired', 'terminated'],
+      // Keep legacy statuses ('signed', 'expired', 'terminated') for compatibility with existing data
+      enum: ['draft', 'sent_to_tenant', 'approved', 'signed', 'expired', 'terminated'],
       default: 'draft',
     },
   },
@@ -59,5 +71,7 @@ const agreementSchema = new mongoose.Schema(
 
 // Index for faster queries
 agreementSchema.index({ landlordId: 1, status: 1 });
+agreementSchema.index({ tenantEmail: 1, status: 1 });
+agreementSchema.index({ tenantId: 1, status: 1 });
 
 module.exports = mongoose.model('Agreement', agreementSchema);

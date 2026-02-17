@@ -67,7 +67,7 @@ export default function Agreement() {
     <section>
       <div style={{marginBottom:32}}>
         <h2 style={{fontSize:28,marginBottom:6}}>Rental Agreement</h2>
-        <p className="muted">Create and e-sign rental agreements instantly</p>
+        <p className="muted">Create an agreement and send it to your tenant for approval</p>
       </div>
 
       {/* Steps */}
@@ -137,45 +137,45 @@ export default function Agreement() {
             <p><strong>Monthly Rent:</strong> ₹{formData.rentAmount || '0'}</p>
             <p><strong>Duration:</strong> {formData.duration} months starting {formData.startDate || 'TBD'}</p>
             <hr style={{border:'1px solid var(--border)',margin:'16px 0'}} />
-            <p style={{fontSize:12,color:'var(--muted)'}}>This is a template agreement. Customize as needed. Both parties must sign to finalize.</p>
+            <p style={{fontSize:12,color:'var(--muted)'}}>This is a template agreement. Your tenant will be asked to approve/confirm it.</p>
           </div>
           <div className="row" style={{justifyContent:'space-between'}}>
             <button className="btn btn-ghost" onClick={() => setStep(1)}>← Back</button>
-            <button className="btn btn-primary" onClick={() => setStep(3)}>Sign Agreement →</button>
+            <button className="btn btn-primary" onClick={() => setStep(3)}>Send for approval →</button>
           </div>
         </div>
       )}
 
-      {/* Step 3: Sign */}
+      {/* Step 3: Send */}
       {step === 3 && (
         <div className="card">
-          <h3 style={{marginBottom:16,marginTop:0}}>✍️ E-Signature</h3>
+          <h3 style={{marginBottom:16,marginTop:0}}>📨 Send to tenant</h3>
           {!signed ? (
             <div className="col gap-3">
               <div style={{padding:16,background:'rgba(139,92,246,0.08)',borderRadius:10,borderLeft:'3px solid var(--accent)'}}>
-                <div style={{fontWeight:600,marginBottom:4}}>Ready to sign?</div>
-                <div className="muted">By signing, you agree to the terms and conditions of this rental agreement.</div>
+                <div style={{fontWeight:600,marginBottom:4}}>Ready to send?</div>
+                <div className="muted">We’ll notify the tenant and request their approval.</div>
               </div>
               <div>
                 <label style={{display:'flex',gap:8,cursor:'pointer',alignItems:'center'}}>
                   <input type="checkbox" required />
-                  <span style={{fontSize:14}}>I acknowledge and agree to the terms</span>
+                  <span style={{fontSize:14}}>I confirm these details are correct</span>
                 </label>
               </div>
               {error && <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>{error}</p>}
               <button className="btn btn-primary" onClick={handleSign} disabled={saving} style={{width:'100%',justifyContent:'center'}}>
-                {saving ? 'Saving...' : '🔐 Sign Now'}
+                {saving ? 'Sending...' : 'Send to tenant'}
               </button>
             </div>
           ) : (
             <div style={{padding:18,background:'rgba(16,185,129,0.08)',borderRadius:10,border:'1px solid rgba(16,185,129,0.3)'}}>
               <div style={{textAlign:'center',marginBottom:16}}>
                 <div style={{fontSize:32,marginBottom:8}}>✅</div>
-                <div style={{fontWeight:700,marginBottom:4}}>Agreement Signed Successfully!</div>
-                <div className="muted">Signature timestamp: {new Date().toLocaleString()}</div>
+                <div style={{fontWeight:700,marginBottom:4}}>Agreement sent to tenant</div>
+                <div className="muted">Sent timestamp: {new Date().toLocaleString()}</div>
               </div>
               <div style={{padding:12,background:'rgba(255,255,255,0.02)',borderRadius:8,marginBottom:16,textAlign:'center'}}>
-                <div style={{fontSize:12,color:'var(--muted-dark)'}}>Signed by: {formData.tenantName || 'Tenant'}</div>
+                <div style={{fontSize:12,color:'var(--muted-dark)'}}>Waiting for approval from: {formData.tenantEmail || 'Tenant'}</div>
               </div>
               <button 
                 className="btn btn-primary" 

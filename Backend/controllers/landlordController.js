@@ -1,5 +1,7 @@
 const Tenant = require('../models/Tenant');
 const Agreement = require('../models/Agreement');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 /**
  * GET /api/landlord/dashboard-stats
@@ -140,23 +142,45 @@ exports.createAgreement = async (req, res) => {
       });
     }
 
+    const normalizedTenantEmail = tenantEmail.toLowerCase().trim();
+
+    // Attempt to link to an existing tenant user (optional; notifications will still match by email)
+    const tenantUser = await User.findOne({
+      email: normalizedTenantEmail,
+      role: 'tenant',
+    }).select('_id email role');
+
     // Create agreement
     const agreement = await Agreement.create({
       landlordId: landlordObjectId,
+      tenantId: tenantUser?._id || null,
       tenantName,
-      tenantEmail: tenantEmail.toLowerCase(),
+      tenantEmail: normalizedTenantEmail,
       landlordName,
       propertyAddress,
       rentAmount: Number(rentAmount),
       duration: Number(duration),
       startDate: new Date(startDate),
-      status: 'signed',
+      status: 'sent_to_tenant',
+      sentToTenantAt: new Date(),
+    });
+
+    // Create a tenant notification (stored as Pending until tenant approves)
+    await Notification.create({
+      type: 'AGREEMENT_SENT',
+      status: 'PENDING',
+      landlordId: landlordObjectId,
+      recipientUserId: tenantUser?._id || null,
+      recipientEmail: normalizedTenantEmail,
+      agreementId: agreement._id,
+      title: 'New rental agreement awaiting your approval',
+      message: `Agreement for ${propertyAddress} (₹${Number(rentAmount)}/month, ${Number(duration)} months) is awaiting your confirmation.`,
     });
 
     // Create or update tenant record
     let tenant = await Tenant.findOne({
       landlordId: landlordObjectId,
-      email: tenantEmail.toLowerCase(),
+      email: normalizedTenantEmail,
       propertyAddress,
     });
 
@@ -174,7 +198,7 @@ exports.createAgreement = async (req, res) => {
       tenant = await Tenant.create({
         landlordId: landlordObjectId,
         name: tenantName,
-        email: tenantEmail.toLowerCase(),
+        email: normalizedTenantEmail,
         propertyAddress,
         rentAmount: Number(rentAmount),
         agreementStatus: 'active',
@@ -186,7 +210,7 @@ exports.createAgreement = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Agreement created and tenant added successfully',
+      message: 'Agreement created and sent to tenant for approval',
       data: {
         agreement,
         tenant,

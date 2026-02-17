@@ -65,7 +65,7 @@ function Navbar() {
     { path: '/', icon: FiHome, label: 'Home' },
     { path: dashboardPath, icon: FiHome, label: 'Dashboard' },
     { path: '/tickets', icon: FiTool, label: 'Tickets' },
-    { path: '/agreement', icon: FiFileText, label: 'Agreements' },
+    { path: '/agreements', icon: FiFileText, label: 'Agreements' },
   ];
 
   const avatarLetter = user
