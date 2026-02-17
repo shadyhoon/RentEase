@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/authRoutes');
 const tenantRoutes = require('./routes/tenantRoutes');
 const landlordRoutes = require('./routes/landlordRoutes');
+const agreementsRoutes = require('./routes/agreementsRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +46,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/tenant', tenantRoutes);
 app.use('/api/landlord', landlordRoutes);
+app.use('/api/agreements', agreementsRoutes);
 
 // 404
 app.use((req, res) => {
