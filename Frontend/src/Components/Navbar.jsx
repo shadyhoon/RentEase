@@ -66,6 +66,9 @@ function Navbar() {
     { path: dashboardPath, icon: FiHome, label: 'Dashboard' },
     { path: '/tickets', icon: FiTool, label: 'Tickets' },
     { path: '/agreements', icon: FiFileText, label: 'Agreements' },
+    ...(user && user.role === 'tenant'
+      ? [{ path: '/payments', icon: FiDollarSign, label: 'Payments' }]
+      : []),
   ];
 
   const avatarLetter = user

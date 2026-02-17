@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import Card from '../Components/Card'
 import { FiLogOut, FiDollarSign, FiUsers, FiHome, FiAlertCircle } from 'react-icons/fi'
 import * as landlordApi from '../api/landlord'
+import * as paymentsApi from '../api/payments'
 import './DashboardLayout.css'
 
 export default function LandlordDashboard() {
@@ -17,16 +18,19 @@ export default function LandlordDashboard() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [payments, setPayments] = useState([])
+  const [paymentsLoading, setPaymentsLoading] = useState(true)
 
   useEffect(() => {
     // Wait for auth to load before making API call
-    if (!authLoading && token) {
+    if (!authLoading && token && user) {
       loadDashboardStats()
+      loadRecentPayments()
     } else if (!authLoading && !token) {
       setError('Not authenticated. Please log in.')
       setLoading(false)
     }
-  }, [authLoading, token])
+  }, [authLoading, token, user])
 
   const loadDashboardStats = async () => {
     if (!token) {
@@ -52,6 +56,22 @@ export default function LandlordDashboard() {
       setError(errorMessage)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadRecentPayments = async () => {
+    if (!token || !user?.id) {
+      setPaymentsLoading(false)
+      return
+    }
+    try {
+      setPaymentsLoading(true)
+      const res = await paymentsApi.getLandlordPayments(user.id, token)
+      setPayments(res.data || [])
+    } catch (err) {
+      console.error('Recent payments error:', err)
+    } finally {
+      setPaymentsLoading(false)
     }
   }
 
@@ -169,13 +189,31 @@ export default function LandlordDashboard() {
           </div>
         </div>
         <div className="card">
-          <h3 style={{ marginBottom: 12, marginTop: 0 }}>Info</h3>
-          <p className="muted" style={{ marginBottom: 8 }}>
-            Create agreements to add tenants and track rent collection.
-          </p>
-          <p className="muted" style={{ fontSize: 12 }}>
-            Dashboard updates automatically when you create new agreements.
-          </p>
+          <h3 style={{ marginBottom: 12, marginTop: 0 }}>Recent payments</h3>
+          {paymentsLoading ? (
+            <p className="muted" style={{ marginBottom: 0 }}>Loading…</p>
+          ) : payments.length === 0 ? (
+            <p className="muted" style={{ marginBottom: 0 }}>No payments recorded yet.</p>
+          ) : (
+            <div className="col gap-2">
+              {payments.slice(0, 5).map((p) => (
+                <div key={p._id} className="payment-row">
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{p.tenantName}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {p.propertyAddress}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 700 }}>₹ {p.amount?.toLocaleString()}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

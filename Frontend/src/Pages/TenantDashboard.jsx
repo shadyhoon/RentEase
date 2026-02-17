@@ -6,6 +6,7 @@ import { FiLogOut, FiDollarSign, FiFileText, FiTool } from 'react-icons/fi'
 import './DashboardLayout.css'
 import * as tenantApi from '../api/tenant'
 import * as agreementsApi from '../api/agreements'
+import * as paymentsApi from '../api/payments'
 
 export default function TenantDashboard() {
   const { user, logout, token } = useAuth()
@@ -14,6 +15,10 @@ export default function TenantDashboard() {
   const [loadingNotifs, setLoadingNotifs] = useState(true)
   const [notifError, setNotifError] = useState('')
   const [approvingId, setApprovingId] = useState(null)
+  const [activeAgreement, setActiveAgreement] = useState(null)
+  const [loadingAgreement, setLoadingAgreement] = useState(true)
+  const [paymentError, setPaymentError] = useState('')
+  const [paying, setPaying] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -44,8 +49,24 @@ export default function TenantDashboard() {
     }
   }
 
+  const loadActiveAgreement = async () => {
+    if (!token) return
+    try {
+      setLoadingAgreement(true)
+      setPaymentError('')
+      const res = await agreementsApi.getMyAgreements({ status: 'approved' }, token)
+      const list = res.data || []
+      setActiveAgreement(list[0] || null)
+    } catch (err) {
+      setPaymentError(err.message || 'Failed to load agreement')
+    } finally {
+      setLoadingAgreement(false)
+    }
+  }
+
   useEffect(() => {
     loadNotifications()
+    loadActiveAgreement()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
@@ -59,6 +80,86 @@ export default function TenantDashboard() {
       setNotifError(err.message || 'Failed to approve agreement')
     } finally {
       setApprovingId(null)
+    }
+  }
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined') {
+        reject(new Error('Window is not available'))
+        return
+      }
+      if (window.Razorpay) {
+        resolve(true)
+        return
+      }
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => reject(new Error('Failed to load Razorpay SDK'))
+      document.body.appendChild(script)
+    })
+  }
+
+  const handlePayNow = async () => {
+    if (!activeAgreement) {
+      setPaymentError('No active agreement found to pay against.')
+      return
+    }
+    try {
+      setPaying(true)
+      setPaymentError('')
+
+      await loadRazorpayScript()
+
+      const orderRes = await paymentsApi.createOrder(
+        { agreementId: activeAgreement._id },
+        token
+      )
+      const { orderId, amount, currency, keyId } = orderRes.data
+
+      const options = {
+        key: keyId,
+        amount,
+        currency,
+        name: 'RentEase',
+        description: `Rent for ${activeAgreement.propertyAddress}`,
+        order_id: orderId,
+        prefill: {
+          name: user?.name || activeAgreement.tenantName,
+          email: user?.email,
+        },
+        notes: {
+          agreementId: activeAgreement._id,
+        },
+        handler: async function (response) {
+          try {
+            await paymentsApi.verifyPayment(
+              {
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpaySignature: response.razorpay_signature,
+              },
+              token
+            )
+            // Optionally refresh dashboard stats or show toast – for now, just reload agreement info
+            await loadActiveAgreement()
+          } catch (err) {
+            setPaymentError(err.message || 'Payment verification failed')
+          }
+        },
+        theme: {
+          color: '#8b5cf6',
+        },
+      }
+
+      // eslint-disable-next-line no-undef
+      const rzp = new window.Razorpay(options)
+      rzp.open()
+    } catch (err) {
+      setPaymentError(err.message || 'Failed to start payment')
+    } finally {
+      setPaying(false)
     }
   }
 
@@ -134,13 +235,38 @@ export default function TenantDashboard() {
           <h3 style={{ marginBottom: 16, marginTop: 0 }}>Quick actions</h3>
           <div className="col gap-2">
             <a className="btn btn-primary" href="/agreements" style={{ width: '100%', justifyContent: 'center' }}>View agreements</a>
+            <a className="btn btn-ghost" href="/payments" style={{ width: '100%', justifyContent: 'center' }}>View payments</a>
             <a className="btn btn-ghost" href="/tickets" style={{ width: '100%', justifyContent: 'center' }}>Raise maintenance ticket</a>
           </div>
         </div>
         <div className="card">
           <h3 style={{ marginBottom: 12, marginTop: 0 }}>Next payment</h3>
-          <p className="muted" style={{ marginBottom: 8 }}>Rent due Jan 1, 2025</p>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>₹ 12,000</div>
+          {paymentError && (
+            <p style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 8 }}>{paymentError}</p>
+          )}
+          {loadingAgreement ? (
+            <p className="muted" style={{ marginBottom: 0 }}>Loading…</p>
+          ) : !activeAgreement ? (
+            <p className="muted" style={{ marginBottom: 0 }}>No active agreement available.</p>
+          ) : (
+            <>
+              <p className="muted" style={{ marginBottom: 8 }}>
+                Rent for {activeAgreement.propertyAddress}
+              </p>
+              <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
+                ₹ {activeAgreement.rentAmount?.toLocaleString?.() || activeAgreement.rentAmount}
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handlePayNow}
+                disabled={paying}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                {paying ? 'Processing…' : 'Pay Now'}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </section>

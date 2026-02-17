@@ -2,6 +2,7 @@ const Tenant = require('../models/Tenant');
 const Agreement = require('../models/Agreement');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const Payment = require('../models/Payment');
 
 /**
  * GET /api/landlord/dashboard-stats
@@ -46,12 +47,22 @@ exports.getDashboardStats = async (req, res) => {
     });
     const propertiesCount = properties.length;
 
-    // Calculate total collected (sum of rent from active tenants)
-    const tenants = await Tenant.find({
-      landlordId: landlordObjectId,
-      isActive: true,
-    }).select('rentAmount');
-    const totalCollected = tenants.reduce((sum, t) => sum + (t.rentAmount || 0), 0);
+    // Calculate total collected: sum of successful payments only
+    const paymentAgg = await Payment.aggregate([
+      {
+        $match: {
+          landlordId: landlordObjectId,
+          paymentStatus: 'Success',
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$amount' },
+        },
+      },
+    ]);
+    const totalCollected = paymentAgg.length > 0 ? paymentAgg[0].total : 0;
 
     // Pending issues (placeholder - can be replaced with actual tickets count later)
     const pendingIssues = 0; // TODO: integrate with tickets system

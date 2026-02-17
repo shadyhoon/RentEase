@@ -12,6 +12,7 @@ import Tenants from './Pages/Tenants'
 import Tickets from './Pages/Tickets'
 import Agreement from './Pages/Agreement'
 import Agreements from './Pages/Agreements'
+import TenantPayments from './Pages/TenantPayments'
 import NotFound from './Pages/NotFound'
 import ProtectedRoute from './Components/ProtectedRoute'
 import './App.css'
@@ -32,6 +33,7 @@ const App = () => {
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/agreement" element={<ProtectedRoute allowedRoles={['landlord']}><Agreement /></ProtectedRoute>} />
           <Route path="/agreements" element={<ProtectedRoute allowedRoles={['tenant','landlord']}><Agreements /></ProtectedRoute>} />
+          <Route path="/payments" element={<ProtectedRoute allowedRoles={['tenant']}><TenantPayments /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
