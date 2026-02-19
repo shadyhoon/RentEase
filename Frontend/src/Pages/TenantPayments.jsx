@@ -35,7 +35,9 @@ export default function TenantPayments() {
         const res = await paymentsApi.getTenantPayments(user.id, token)
         setPayments(res.data || [])
       } catch (err) {
-        setError(err.message || 'Failed to load payments')
+        console.error('Tenant payments load error:', err, err.data)
+        const backendMessage = err?.data?.message
+        setError(backendMessage || err.message || 'Failed to load payments')
       } finally {
         setLoading(false)
       }

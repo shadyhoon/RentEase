@@ -1,7 +1,7 @@
 // Components/Navbar.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiHome, FiFileText, FiTool, FiBell, FiUser, FiMenu, FiX, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiFileText, FiTool, FiDollarSign, FiBell, FiUser, FiMenu, FiX, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
