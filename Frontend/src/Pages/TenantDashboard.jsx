@@ -7,6 +7,7 @@ import './DashboardLayout.css'
 import * as tenantApi from '../api/tenant'
 import * as agreementsApi from '../api/agreements'
 import * as paymentsApi from '../api/payments'
+import * as ticketsApi from '../api/tickets'
 
 export default function TenantDashboard() {
   const { user, logout, token } = useAuth()
@@ -19,6 +20,37 @@ export default function TenantDashboard() {
   const [loadingAgreement, setLoadingAgreement] = useState(true)
   const [paymentError, setPaymentError] = useState('')
   const [paying, setPaying] = useState(false)
+  const [payments, setPayments] = useState([])
+  const [openTicketsCount, setOpenTicketsCount] = useState(0)
+
+  const monthlyRent = useMemo(() => {
+    const amt = Number(activeAgreement?.rentAmount || 0)
+    return Number.isFinite(amt) && amt > 0 ? amt : 0
+  }, [activeAgreement])
+
+  const currentMonthPaid = useMemo(() => {
+    const now = new Date()
+    const m = now.getMonth()
+    const y = now.getFullYear()
+    return (payments || []).some((p) => {
+      if (p?.paymentStatus !== 'Success') return false
+      if (!p?.paymentDate) return false
+      const d = new Date(p.paymentDate)
+      if (Number.isNaN(d.getTime())) return false
+      return d.getMonth() === m && d.getFullYear() === y
+    })
+  }, [payments])
+
+  const rentDue = useMemo(() => {
+    const due = currentMonthPaid ? 0 : monthlyRent
+    return due < 0 ? 0 : due
+  }, [currentMonthPaid, monthlyRent])
+
+  const nextBillingLabel = useMemo(() => {
+    const now = new Date()
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    return next.toLocaleString('en-IN', { month: 'short', year: 'numeric' })
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -26,10 +58,36 @@ export default function TenantDashboard() {
   }
 
   const stats = [
-    { label: 'Rent due this month', value: '₹ 12,000', icon: FiDollarSign },
+    { label: 'Rent due this month', value: `₹ ${rentDue.toLocaleString()}`, icon: FiDollarSign },
     { label: 'Last paid', value: 'Dec 1, 2024', icon: FiFileText },
-    { label: 'Open tickets', value: '1', icon: FiTool }
+    { label: 'Open tickets', value: openTicketsCount.toString(), icon: FiTool, badgeCount: openTicketsCount }
   ]
+
+  const loadOpenTicketsCount = async () => {
+    if (!token) return
+    try {
+      const res = await ticketsApi.getTickets(token)
+      const list = res.data || []
+      const count = list.filter((t) => {
+        if (t.status === 'Open') return true
+        if (t.status === 'Resolved' && t.approvalStatus === 'Pending') return true
+        return false
+      }).length
+      setOpenTicketsCount(count)
+    } catch (_) {
+      setOpenTicketsCount(0)
+    }
+  }
+
+  const loadPayments = async () => {
+    if (!token || !user?.id) return
+    try {
+      const res = await paymentsApi.getTenantPayments(user.id, token)
+      setPayments(res.data || [])
+    } catch (_) {
+      setPayments([])
+    }
+  }
 
   const pendingAgreementNotifs = useMemo(() => {
     return (notifications || []).filter((n) => n.type === 'AGREEMENT_SENT' && n.status === 'PENDING')
@@ -67,6 +125,15 @@ export default function TenantDashboard() {
   useEffect(() => {
     loadNotifications()
     loadActiveAgreement()
+    loadPayments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
+
+  useEffect(() => {
+    loadOpenTicketsCount()
+    const onTicketsUpdated = () => loadOpenTicketsCount()
+    window.addEventListener('rentease:ticketsUpdated', onTicketsUpdated)
+    return () => window.removeEventListener('rentease:ticketsUpdated', onTicketsUpdated)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
@@ -144,6 +211,7 @@ export default function TenantDashboard() {
             )
             // Optionally refresh dashboard stats or show toast – for now, just reload agreement info
             await loadActiveAgreement()
+            await loadPayments()
           } catch (err) {
             setPaymentError(err.message || 'Payment verification failed')
           }
@@ -177,7 +245,23 @@ export default function TenantDashboard() {
 
       <div className="grid grid-3" style={{ marginBottom: 32 }}>
         {stats.map((s, i) => (
-          <Card key={i}>
+          <Card key={i} style={s.label === 'Open tickets' ? { position: 'relative' } : {}}>
+            {s.label === 'Open tickets' && s.badgeCount > 0 && (
+              <span
+                className="badge danger"
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  borderRadius: 999,
+                  transition: 'transform 0.2s ease',
+                }}
+              >
+                {s.badgeCount}
+              </span>
+            )}
             <s.icon className="stat-icon" style={{ fontSize: 22, color: 'var(--accent)', marginBottom: 8 }} />
             <div className="muted" style={{ fontSize: 13 }}>{s.label}</div>
             <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{s.value}</div>
@@ -251,10 +335,10 @@ export default function TenantDashboard() {
           ) : (
             <>
               <p className="muted" style={{ marginBottom: 8 }}>
-                Rent for {activeAgreement.propertyAddress}
+                {rentDue === 0 ? `Next billing cycle: ${nextBillingLabel}` : `Rent for ${activeAgreement.propertyAddress}`}
               </p>
               <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
-                ₹ {activeAgreement.rentAmount?.toLocaleString?.() || activeAgreement.rentAmount}
+                ₹ {monthlyRent.toLocaleString()}
               </div>
               <button
                 type="button"

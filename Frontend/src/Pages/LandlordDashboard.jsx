@@ -5,6 +5,7 @@ import Card from '../Components/Card'
 import { FiLogOut, FiDollarSign, FiUsers, FiHome, FiAlertCircle } from 'react-icons/fi'
 import * as landlordApi from '../api/landlord'
 import * as paymentsApi from '../api/payments'
+import * as ticketsApi from '../api/tickets'
 import './DashboardLayout.css'
 
 export default function LandlordDashboard() {
@@ -20,17 +21,39 @@ export default function LandlordDashboard() {
   const [error, setError] = useState('')
   const [payments, setPayments] = useState([])
   const [paymentsLoading, setPaymentsLoading] = useState(true)
+  const [pendingTicketsCount, setPendingTicketsCount] = useState(0)
 
   useEffect(() => {
     // Wait for auth to load before making API call
     if (!authLoading && token && user) {
       loadDashboardStats()
       loadRecentPayments()
+      loadPendingTicketsCount()
     } else if (!authLoading && !token) {
       setError('Not authenticated. Please log in.')
       setLoading(false)
     }
   }, [authLoading, token, user])
+
+  useEffect(() => {
+    if (authLoading || !token) return
+    const onTicketsUpdated = () => loadPendingTicketsCount()
+    window.addEventListener('rentease:ticketsUpdated', onTicketsUpdated)
+    return () => window.removeEventListener('rentease:ticketsUpdated', onTicketsUpdated)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, token])
+
+  const loadPendingTicketsCount = async () => {
+    if (!token) return
+    try {
+      const res = await ticketsApi.getTickets(token)
+      const list = res.data || []
+      const count = list.filter((t) => t.status !== 'Closed').length
+      setPendingTicketsCount(count)
+    } catch (_) {
+      setPendingTicketsCount(0)
+    }
+  }
 
   const loadDashboardStats = async () => {
     if (!token) {
@@ -104,8 +127,9 @@ export default function LandlordDashboard() {
     },
     {
       label: 'Pending issues',
-      value: stats.pendingIssues.toString(),
+      value: pendingTicketsCount.toString(),
       icon: FiAlertCircle,
+      badgeCount: pendingTicketsCount,
     },
   ]
 
@@ -132,7 +156,10 @@ export default function LandlordDashboard() {
           <Card
             key={i}
             onClick={s.onClick}
-            style={s.clickable ? { cursor: 'pointer', transition: 'all 0.2s' } : {}}
+            style={{
+              ...(s.clickable ? { cursor: 'pointer', transition: 'all 0.2s' } : {}),
+              ...(s.label === 'Pending issues' ? { position: 'relative' } : {}),
+            }}
             onMouseEnter={(e) => {
               if (s.clickable) e.currentTarget.style.transform = 'translateY(-2px)'
             }}
@@ -140,6 +167,22 @@ export default function LandlordDashboard() {
               if (s.clickable) e.currentTarget.style.transform = 'translateY(0)'
             }}
           >
+            {s.label === 'Pending issues' && s.badgeCount > 0 && (
+              <span
+                className="badge danger"
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  borderRadius: 999,
+                  transition: 'transform 0.2s ease',
+                }}
+              >
+                {s.badgeCount}
+              </span>
+            )}
             <s.icon
               className="stat-icon"
               style={{ fontSize: 22, color: 'var(--accent)', marginBottom: 8 }}

@@ -30,7 +30,7 @@ const App = () => {
           <Route path="/landlord-dashboard" element={<ProtectedRoute allowedRoles={['landlord']}><LandlordDashboard /></ProtectedRoute>} />
           <Route path="/tenants" element={<ProtectedRoute allowedRoles={['landlord']}><Tenants /></ProtectedRoute>} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/tickets" element={<Tickets />} />
+          <Route path="/tickets" element={<ProtectedRoute allowedRoles={['tenant','landlord']}><Tickets /></ProtectedRoute>} />
           <Route path="/agreement" element={<ProtectedRoute allowedRoles={['landlord']}><Agreement /></ProtectedRoute>} />
           <Route path="/agreements" element={<ProtectedRoute allowedRoles={['tenant','landlord']}><Agreements /></ProtectedRoute>} />
           <Route path="/payments" element={<ProtectedRoute allowedRoles={['tenant']}><TenantPayments /></ProtectedRoute>} />

@@ -9,6 +9,7 @@ const tenantRoutes = require('./routes/tenantRoutes');
 const landlordRoutes = require('./routes/landlordRoutes');
 const agreementsRoutes = require('./routes/agreementsRoutes');
 const paymentsRoutes = require('./routes/paymentsRoutes');
+ const ticketsRoutes = require('./routes/ticketsRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,6 +50,9 @@ app.use('/api/tenant', tenantRoutes);
 app.use('/api/landlord', landlordRoutes);
 app.use('/api/agreements', agreementsRoutes);
 app.use('/api/payments', paymentsRoutes);
+ app.use('/api/tickets', ticketsRoutes);
+ // Backward-compatible mount (as documented in API.md)
+ app.use('/tickets', ticketsRoutes);
 
 // 404
 app.use((req, res) => {
