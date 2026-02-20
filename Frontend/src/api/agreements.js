@@ -13,3 +13,7 @@ export async function getLandlordAgreements(token) {
   return apiRequest('/api/agreements/landlord', { method: 'GET' }, token)
 }
 
+export async function deleteAgreement(agreementId, token) {
+  return apiRequest(`/api/agreements/${agreementId}`, { method: 'DELETE' }, token)
+}
+

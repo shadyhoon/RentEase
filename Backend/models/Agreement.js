@@ -42,12 +42,25 @@ const agreementSchema = new mongoose.Schema(
       min: 0,
     },
     duration: {
-      type: Number, // in months
+      type: Number, // in months (legacy)
       required: true,
+    },
+    durationMonths: {
+      type: Number,
+      default: null,
     },
     startDate: {
       type: Date,
       required: true,
+    },
+    endDate: {
+      type: Date,
+      default: null,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     // Timestamp when landlord created/sent the agreement
     sentToTenantAt: {
@@ -62,12 +75,40 @@ const agreementSchema = new mongoose.Schema(
     status: {
       type: String,
       // Keep legacy statuses ('signed', 'expired', 'terminated') for compatibility with existing data
-      enum: ['draft', 'sent_to_tenant', 'approved', 'signed', 'expired', 'terminated'],
+      enum: [
+        'draft',
+        'sent_to_tenant',
+        'approved',
+        'signed',
+        'expired',
+        'terminated',
+        'deleted',
+      ],
       default: 'draft',
     },
   },
   { timestamps: true }
 );
+
+function computeEndDate(startDate, months) {
+  if (!startDate || !months || !Number.isFinite(Number(months))) return null;
+  const d = new Date(startDate);
+  if (Number.isNaN(d.getTime())) return null;
+  const m = Number(months);
+  const end = new Date(d);
+  end.setMonth(end.getMonth() + m);
+  return end;
+}
+
+// Ensure durationMonths and endDate are populated when possible
+agreementSchema.pre('save', function () {
+  if (!this.durationMonths && this.duration) {
+    this.durationMonths = this.duration;
+  }
+  if (!this.endDate && this.startDate && (this.durationMonths || this.duration)) {
+    this.endDate = computeEndDate(this.startDate, this.durationMonths || this.duration);
+  }
+});
 
 // Index for faster queries
 agreementSchema.index({ landlordId: 1, status: 1 });

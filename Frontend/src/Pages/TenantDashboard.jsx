@@ -130,6 +130,14 @@ export default function TenantDashboard() {
   }, [token])
 
   useEffect(() => {
+    if (!token) return
+    const onAgreementsUpdated = () => loadActiveAgreement()
+    window.addEventListener('rentease:agreementsUpdated', onAgreementsUpdated)
+    return () => window.removeEventListener('rentease:agreementsUpdated', onAgreementsUpdated)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
+
+  useEffect(() => {
     loadOpenTicketsCount()
     const onTicketsUpdated = () => loadOpenTicketsCount()
     window.addEventListener('rentease:ticketsUpdated', onTicketsUpdated)

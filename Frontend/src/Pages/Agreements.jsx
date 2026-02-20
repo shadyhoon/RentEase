@@ -14,9 +14,16 @@ export default function Agreements() {
   const [agreements, setAgreements] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   const signedAgreements = useMemo(() => {
-    return (agreements || []).filter((a) => a.status === 'approved' || a.status === 'signed')
+    return (agreements || []).filter((a) =>
+      (a.status === 'approved' || a.status === 'signed') && a.status !== 'deleted' && !a.isDeleted
+    )
+  }, [agreements])
+
+  const visibleAgreements = useMemo(() => {
+    return (agreements || []).filter((a) => a.status !== 'deleted' && !a.isDeleted)
   }, [agreements])
 
   const load = async () => {
@@ -40,8 +47,31 @@ export default function Agreements() {
     }
   }
 
+  const handleDelete = async (agreementId) => {
+    if (!agreementId || !token) return
+    try {
+      setDeletingId(agreementId)
+      setError('')
+      await agreementsApi.deleteAgreement(agreementId, token)
+      setAgreements((prev) => (prev || []).filter((a) => a._id !== agreementId))
+      window.dispatchEvent(new Event('rentease:agreementsUpdated'))
+    } catch (err) {
+      setError(err.message || 'Failed to delete agreement')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   useEffect(() => {
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    const onAgreementsUpdated = () => load()
+    window.addEventListener('rentease:agreementsUpdated', onAgreementsUpdated)
+    return () => window.removeEventListener('rentease:agreementsUpdated', onAgreementsUpdated)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
@@ -66,7 +96,7 @@ export default function Agreements() {
         <div className="card">
           <p className="muted" style={{ margin: 0, padding: 8 }}>Loading…</p>
         </div>
-      ) : (user?.role === 'tenant' ? signedAgreements.length === 0 : agreements.length === 0) ? (
+      ) : (user?.role === 'tenant' ? signedAgreements.length === 0 : visibleAgreements.length === 0) ? (
         <div className="card">
           <div style={{ textAlign: 'center', padding: 28 }}>
             <div style={{ fontSize: 44, marginBottom: 10 }}>📄</div>
@@ -82,7 +112,7 @@ export default function Agreements() {
         </div>
       ) : (
         <div className="grid grid-1" style={{ gap: 16 }}>
-          {(user?.role === 'tenant' ? signedAgreements : agreements).map((a) => (
+          {(user?.role === 'tenant' ? signedAgreements : visibleAgreements).map((a) => (
             <div key={a._id} className="card" style={{ padding: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ minWidth: 220 }}>
@@ -102,6 +132,10 @@ export default function Agreements() {
                   <span className="badge success" style={{ height: 22, alignSelf: 'flex-start' }}>
                     {a.status === 'signed' ? 'signed' : 'approved'}
                   </span>
+                ) : a.status === 'expired' ? (
+                  <span className="badge danger" style={{ height: 22, alignSelf: 'flex-start' }}>
+                    expired
+                  </span>
                 ) : (
                   <span className="badge warning" style={{ height: 22, alignSelf: 'flex-start' }}>
                     {a.status}
@@ -120,6 +154,19 @@ export default function Agreements() {
                 <p><strong>Monthly Rent:</strong> ₹{a.rentAmount}</p>
                 <p><strong>Duration:</strong> {a.duration} months starting {new Date(a.startDate).toLocaleDateString()}</p>
               </div>
+
+              {user?.role === 'landlord' && a.status === 'expired' && !a.isDeleted && (
+                <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => handleDelete(a._id)}
+                    disabled={deletingId === a._id}
+                  >
+                    {deletingId === a._id ? 'Deleting…' : 'Delete Agreement'}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

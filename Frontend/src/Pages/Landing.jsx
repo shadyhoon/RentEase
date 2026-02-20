@@ -1,7 +1,11 @@
 import React from 'react'
 import Card from '../Components/Card'
+import { useAuth } from '../context/AuthContext'
 
 export default function Landing(){
+  const { user } = useAuth()
+  const showRaiseTicket = !user || user.role === 'tenant'
+
   const features = [
     { icon: '💳', title: 'Rent Tracking', desc: 'Automatic rent schedule, reminders, receipts and payment history.' },
     { icon: '🔧', title: 'Maintenance Tickets', desc: 'Raise issues instantly, track progress and communicate in real-time.' },
@@ -20,7 +24,7 @@ export default function Landing(){
         </div>
         <div className="row gap-2">
           <a className="btn btn-primary" href="/login" style={{gap:8}}> Get Started</a>
-          <a className="btn btn-primary" href="/tickets">Raise Ticket</a>
+          {showRaiseTicket && <a className="btn btn-primary" href="/tickets">Raise Ticket</a>}
         </div>
       </div>
 

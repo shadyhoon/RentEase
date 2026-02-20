@@ -230,7 +230,7 @@ export default function Tickets(){
               </div>
               {isLandlord && (
                 <div className="muted" style={{fontSize:12, marginBottom: 10}}>
-                  <div><span style={{fontWeight: 700}}>Tenant:</span> {t.tenantName}</div>
+                  <div><span style={{fontWeight: 700}}>Tenant:</span> {t.tenantName || t.tenantEmail}</div>
                   <div><span style={{fontWeight: 700}}>Email:</span> {t.tenantEmail}</div>
                 </div>
               )}

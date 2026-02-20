@@ -7,6 +7,7 @@ const {
   approveAgreement,
   getMyAgreements,
   getLandlordAgreements,
+  deleteExpiredAgreement,
 } = require('../controllers/agreementsController');
 
 // Tenant approvals + tenant agreement access
@@ -15,6 +16,9 @@ router.get('/my', verifyToken, authorizeRole('tenant'), getMyAgreements);
 
 // Landlord agreement list (optional for dashboards)
 router.get('/landlord', verifyToken, authorizeRole('landlord'), getLandlordAgreements);
+
+// Landlord: delete expired agreement (soft delete)
+router.delete('/:id', verifyToken, authorizeRole('landlord'), deleteExpiredAgreement);
 
 module.exports = router;
 
